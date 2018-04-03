@@ -12,6 +12,7 @@ By default passell reads the following environment variables
 ```env
 PASSELLFS="$HOME/.passell"
 DBN="default"
+PASSELLFSALLOC="16 MiB"
 PASSELLFSTXT="$PASSELLFS/$DBN.txt"
 PASSELLFSBIN="$PASSELLFS/$DBN.bin"
 PASSELLFSPSW="$PASSELLFS/$DBN.psw"
@@ -19,6 +20,9 @@ PASSELLFSPSK="$PASSELLFS/$DBN.psk"
 
 PASSELLPWMIN=9
 PASSELLPWRND=18
+
+PASSELLCKSRTLEN=16
+PASSELLCKSRT=""
 ```
 
 Passell reads from and writes to the files `$PASSELLFSTXT`, `$PASSELLFSBIN` and `$PASSELLFSPSW`. Passell only writes `$PASSELLPSK` once. Passell reads through the entirety of `$PASSELLFSTXT` once on start and emits `ready` when done.
@@ -31,16 +35,13 @@ All previous files are `0o1600` by default (sticky, read-user, write-user). The 
 
 By default a username `root` (with uid 0) is available with a password generated at initalisation. This password is created randomly at initalisation and is 32 characters long with base32 encoding (see package [`buf-b32`](https://www.npmjs.com/package/buf-b32)). It is saved in `$HOME/.passell/$DBN.psk` with `0o1400` (sticky, u+r).
 
+If PASSELLCKSRT is a falsy value it will redefault to a random buffer of length PASSELLCKLEN.
+
 ## Implementation details
 
 ### txt (uname) file
 
 The username database is a newline separated array of names. It's stored in-memory and on-disk simultaneously. The user names (and screen names if enabled) are read, appended to and edited in-place. The screen name is disabled by default, but is stored in JSON delimited format (quoted) as opposed to plain text.
-
-
-### Standard inital data
-
-All binary database parts hold a minimum standard set of data `uid, uname, date`. `date` varies in what it holds; eg in `.bin` it holds sign-up date and in `.pwd` it holds last password change.
 
 
 ### bin (uinfo) file
