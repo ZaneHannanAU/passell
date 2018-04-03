@@ -1,0 +1,35 @@
+{
+  "name": "passell",
+  "version": "0.0.0",
+  "description": "User-info (name, email, phone, screen name) and login (password, 2FA/TOTP, OTP) authorisation. Also does cookie signing and user reading.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ZaneHannanAU/passell.git"
+  },
+  "keywords": [
+    "user",
+    "users",
+    "database",
+    "username",
+    "email",
+    "phone",
+    "login",
+    "password",
+    "2fa",
+    "totp",
+    "otp",
+    "auth",
+    "cookie"
+  ],
+  "author": "zeen3",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/ZaneHannanAU/passell/issues"
+  },
+  "homepage": "https://github.com/ZaneHannanAU/passell#readme",
+  "dependencies": {}
+}
