@@ -31,5 +31,8 @@
     "url": "https://github.com/ZaneHannanAU/passell/issues"
   },
   "homepage": "https://github.com/ZaneHannanAU/passell#readme",
-  "dependencies": {}
+  "dependencies": {
+    "buf-b32": "^1.1.0",
+    "ztotp": "^2.0.1"
+  }
 }
