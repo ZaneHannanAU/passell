@@ -10,7 +10,7 @@ const mkdirp = require('zmkdirp');
 
 
 // shorthand deviations: generates arrays [[0],[0,-1],[0,-1,-2],...]
-const deviations = Array.from({length: 8}, ($,i) => Array.from({length: i+1, (_,d)=>-d));
+const deviations = Array.from({length: 8}, ($,i) => Array.from({length: i+1}, (_,d)=>-d));
 // algs: none, sha1, sha256, sha512
 const algs = [null, 'sha1', 'sha256', 'sha512'];
 
@@ -20,37 +20,48 @@ const rounds = Array.from({length: 64}, ($,n) => Math.pow(2, n));
 
 // promisify crypto, fs functions: rng, pbkdf2, open, close, read, write, append, chmod
 const [
-	rng, pbkdf2,
+	rng, rnf, pbkdf2,
 	fopen, fclose,
 	fread, fwrite, fappend,
-	fchmod, ftrunc
+	fchmod, chmod, ftrunc
 ] = [
 	// crypto functions
-	crypto.randomBytes, crypto.pbkdf2,
+	crypto.randomBytes, crypto.randomFill, crypto.pbkdf2,
 	// open and close routines
-	fs.open, fs.close, 
+	fs.open, fs.close,
 	// read, write and append routines
 	fs.read, fs.write, fs.appendFile,
-	// read/write routines
-	fs.chmod, fs.ftruncate
+	// modifications
+	fs.fchmod, fs.chmod, fs.ftruncate
 ].map(util.promisify);
 
 // environment variables
 
 const {
+	// main top-level directory
 	PASSELLFS = path.join(os.homedir(), '.passell'),
+	// name of database. Please do change this.
 	DBN = 'default',
+	// Space to allocate for certain files
 	PASSELLFSALLOC = '16 MiB',
+	// username\0"User's screen name" file
 	PASSELLFSTXT = path.join(PASSELLFS, `${DBN}.txt`),
+	// Information holder
 	PASSELLFSBIN = path.join(PASSELLFS, `${DBN}.bin`),
+	// Password file
 	PASSELLFSPSW = path.join(PASSELLFS, `${DBN}.psw`),
+	// root password (uid 0)
 	PASSELLFSPSK = path.join(PASSELLFS, `${DBN}.psk`),
+	// cookie secret. only villains change this.
+	PASSELLFSSRT = path.join(PASSELLFS, `${DBN}.srt`),
 
+	// password minimum length
 	PASSELLPWMIN = '9',
+	// 2^n password rounds
 	PASSELLPWRND = '18',
 
-	PASSELLCKSRTLEN = '16',
-	PASSELLCKSRT = ''
+	// secret. set via PASSELLSRT and it is a buffer, set via PASSELLFSSRT and it is a buffer that won't change
+	PASSELLCKSRT = fs.accessSync() ? fs.readFileSync(PASSELLFSSRT) : ''
 } = process.env
 
 let [, n = '16', e = ''] = PASSELLFSALLOC
@@ -58,12 +69,19 @@ let [, n = '16', e = ''] = PASSELLFSALLOC
 
 const E = 'KMGTP'.indexOf(e.toUpperCase())
 
+// check if secret exists
 const SECRET = PASSELLCKSRT
-	? Buffer.from(PASSELLCKSRT)
-	: crypto.randomBytes(Math.max(16, Number.parseInt(PASSELLCKSRTLEN, 10) || 0))
+	// fill if it does
+	? Buffer.isBuffer(PASSELLCKSRT) ? PASSELLCKSRT : Buffer.from(PASSELLCKSRT)
+	// make if it doesn't
+	: (()=>{
+		const data = crypto.randomBytes(256);
+		fs.writeFileSync(data, {encoding: null, mode: 0o1400})
+		return data
+	})()
 
 const utils = {
-	env: { // environment changed variables.
+	env: { // environment set changed variables.
 		dir: PASSELLFS,
 		dbn: DBN,
 		alloc: Number.parseInt(n, 10) * Math.pow(1024, E),
@@ -72,15 +90,24 @@ const utils = {
 		cookie_secret: SECRET
 	},
 	fn: { // constant functions
+		// base32
 		buf_b32, b32_buf,
+		// totp/otp
 		getTOTP, verifyTOTP, toURI,
-		rng, pbkdf2,
+		// crypto
+		rng, rnf, pbkdf2,
+		// files and folders
 		mkdirp, fopen, fclose,
+		// data modify
 		fread, fwrite, fappend,
-		fchmod, ftrunc,
+		// data understand
+		fchmod, chmod, ftrunc,
 	},
 	constants: { // non-function constants
-		deviations, rounds, algs
+		// totp
+		deviations, algs,
+		// password
+		rounds, alg: 'sha384'
 	}
 };
 
