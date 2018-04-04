@@ -1,9 +1,12 @@
 # Pass&ell;
 
+It's all about the length.
+
+---
+
 Combination password and OTP set. Uses many fields and has a global UID.
 
 Presumes user names are between 2 and 20 characters, made of the character regex `/^[0-9A-Za-z_-]{2,20}$/`.
-
 
 ## Files
 
@@ -17,11 +20,11 @@ PASSELLFSTXT="$PASSELLFS/$DBN.txt"
 PASSELLFSBIN="$PASSELLFS/$DBN.bin"
 PASSELLFSPSW="$PASSELLFS/$DBN.psw"
 PASSELLFSPSK="$PASSELLFS/$DBN.psk"
+PASSELLFSSRT="$PASSELLFS/$DBN.srt"
 
 PASSELLPWMIN=9
 PASSELLPWRND=18
 
-PASSELLCKSRTLEN=16
 PASSELLCKSRT=""
 ```
 
@@ -31,11 +34,15 @@ New passwords have a minimum length of `$PASSELLPWMIN`, and are hashed through `
 
 Passwords are only checked before setting/at time of creation.
 
-All previous files are `0o1600` by default (sticky, read-user, write-user). The parent dir is `0o1700` by default (sticky, u+rwx); allows multiple databases without knowing the exact name.
+All previous files are `0o1600` by default (sticky, u+rw). The parent dir is `0o1700` by default (sticky, u+rwx); allows multiple databases without knowing the exact name.
 
 By default a username `root` (with uid 0) is available with a password generated at initalisation. This password is created randomly at initalisation and is 32 characters long with base32 encoding (see package [`buf-b32`](https://www.npmjs.com/package/buf-b32)). It is saved in `$HOME/.passell/$DBN.psk` with `0o1400` (sticky, u+r).
 
-If PASSELLCKSRT is a falsy value it will redefault to a random buffer of length PASSELLCKLEN.
+If PASSELLCKSRT is a falsy value it will redefault to a random buffer of 256 characters. From that point it will read from PASSELLFSSRT by default.
+
+Please use the same value for PASSELLSRT. Only villains use a varying value.
+
+
 
 ## Implementation details
 

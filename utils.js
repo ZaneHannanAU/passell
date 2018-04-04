@@ -10,13 +10,13 @@ const mkdirp = require('zmkdirp');
 
 
 // shorthand deviations: generates arrays [[0],[0,-1],[0,-1,-2],...]
-const deviations = Array.from({length: 8}, ($,i) => Array.from({length: i+1}, (_,d)=>-d));
+const otp_deviations = Array.from({length: 8}, ($,i) => Array.from({length: i+1}, (_,d)=>-d));
 // algs: none, sha1, sha256, sha512
-const algs = [null, 'sha1', 'sha256', 'sha512'];
+const otp_algs = [null, 'sha1', 'sha256', 'sha512'];
 
 
 // shorthand password rounds: 2^n keys. Always make more than you'll need...
-const rounds = Array.from({length: 64}, ($,n) => Math.pow(2, n));
+const pw_rounds = Array.from({length: 64}, ($,n) => Math.pow(2, n));
 
 // promisify crypto, fs functions: rng, pbkdf2, open, close, read, write, append, chmod
 const [
@@ -35,60 +35,10 @@ const [
 	fs.fchmod, fs.chmod, fs.ftruncate
 ].map(util.promisify);
 
-// environment variables
-
-const {
-	// main top-level directory
-	PASSELLFS = path.join(os.homedir(), '.passell'),
-	// name of database. Please do change this.
-	DBN = 'default',
-	// Space to allocate for certain files
-	PASSELLFSALLOC = '16 MiB',
-	// username\0"User's screen name" file
-	PASSELLFSTXT = path.join(PASSELLFS, `${DBN}.txt`),
-	// Information holder
-	PASSELLFSBIN = path.join(PASSELLFS, `${DBN}.bin`),
-	// Password file
-	PASSELLFSPSW = path.join(PASSELLFS, `${DBN}.psw`),
-	// root password (uid 0)
-	PASSELLFSPSK = path.join(PASSELLFS, `${DBN}.psk`),
-	// cookie secret. only villains change this.
-	PASSELLFSSRT = path.join(PASSELLFS, `${DBN}.srt`),
-
-	// password minimum length
-	PASSELLPWMIN = '9',
-	// 2^n password rounds
-	PASSELLPWRND = '18',
-
-	// secret. set via PASSELLSRT and it is a buffer, set via PASSELLFSSRT and it is a buffer that won't change
-	PASSELLCKSRT = fs.accessSync() ? fs.readFileSync(PASSELLFSSRT) : ''
-} = process.env
-
-let [, n = '16', e = ''] = PASSELLFSALLOC
-	.match(/(\d+(?:\.\d+)?)(?:\s*([KMGTP])?i?B)/)
-
-const E = 'KMGTP'.indexOf(e.toUpperCase())
-
-// check if secret exists
-const SECRET = PASSELLCKSRT
-	// fill if it does
-	? Buffer.isBuffer(PASSELLCKSRT) ? PASSELLCKSRT : Buffer.from(PASSELLCKSRT)
-	// make if it doesn't
-	: (()=>{
-		const data = crypto.randomBytes(256);
-		fs.writeFileSync(data, {encoding: null, mode: 0o1400})
-		return data
-	})()
 
 const utils = {
-	env: { // environment set changed variables.
-		dir: PASSELLFS,
-		dbn: DBN,
-		alloc: Number.parseInt(n, 10) * Math.pow(1024, E),
-		pw_min: Number.parseInt(PASSELLPWMIN, 10) || 9,
-		pw_rounds: Number.parseInt(PASSELLPWRND, 10) || 18,
-		cookie_secret: SECRET
-	},
+	env: require('./env'),
+	cookies: require('./ccookies'),
 	fn: { // constant functions
 		// base32
 		buf_b32, b32_buf,
@@ -105,9 +55,14 @@ const utils = {
 	},
 	constants: { // non-function constants
 		// totp
-		deviations, algs,
+		totp_deviations,
+		totp_algs,
 		// password
-		rounds, alg: 'sha384'
+		pw_rounds,
+		pw_alg: 'sha384',
+		// otp
+		otp_rounds: pw_rounds+5,
+		otp_alg: 'sha384',
 	}
 };
 
