@@ -33,6 +33,7 @@
   "homepage": "https://github.com/ZaneHannanAU/passell#readme",
   "dependencies": {
     "buf-b32": "^1.1.0",
-    "ztotp": "^2.0.1"
+    "zmkdirp": "^2.0.1",
+    "ztotp": "^2.0.2"
   }
 }
