@@ -3,15 +3,16 @@ const {cookie_secret} = require('./env');
 
 // generic functions
 const fnull = () => null
+const clearFalsy = v => v
+const vToString = v => v.toString()
 const akvo = (o = Object.create(null), [k, v = '']) => {
 	if (k in v) o[k].push(v)
 	else o[k] = [v]
 	return o;
-}; // array key value objectify
-const vToString = v => v.toString()
-const clearFalsy = v => v
-// regex murders
+};
+// array key value objectify
 
+// regex murders
 const ne = /\=+$/
 const cASCII = /^[\!\.0-9A-Za-z_-]*$/
 const cspl = /[\=\.]/g
@@ -96,12 +97,13 @@ const scookie = {
 	},
 	get flags() {return this._flags;},
 	set flags(f){
+		if (!f && !this.flags) return ''
 		if (Array.isArray(f)) return this._flags = f.reduce(
 			cookie_attrs,
 			this._flags
 		);
 		if ('string' === typeof f)
-			return this._flags = `${this.flags}; ${f}`
+			return this._flags = `${this.flags || ''}; ${f}`
 		;
 	},
 	toString() {
@@ -110,16 +112,14 @@ const scookie = {
 			'string' === typeof this.signed
 				? this.signed
 				: this.resign()
-		}`;
+		}${this.flags || ''}`;
 	},
 	make(name, value, signed, flags = '') {
 		const c = Object.create(scookie);
 		c._name = name;
 		c._value = value;
 		c._signed = signed;
-		c._flags = Array.isArray(flags)
-			? flags.reduce(cookie_attrs, '')
-			: flags;
+		c.flags = flags;
 		return c;
 	}
 };
@@ -131,6 +131,8 @@ const __CSRF = '__Host-csrf',
 
 
 const ccookies = {
+	__CSRF,
+	UINFO,
 	cookie_secret,
 	scookie,
 	sign(name, val, ...attrs) {
@@ -143,12 +145,12 @@ const ccookies = {
 	unsign(c) {
 		const [name, str, b64, sign] = c
 			.split(cspl);
-		const val = b64_d(null, str, b64);
 		const safe = sign.length !== b64len ? false
 			: crypto.timingSafeEqual(
 				Buffer.from(sign, 'base64'),
 				hmkc(name, val).digest()
 			);
+		const val = safe ? b64_d(null, str, b64) : '';
 		return scookie.make(name, val, safe ? sign : false);
 	},
 	unsignAll(ck) {
@@ -174,7 +176,7 @@ const ccookies = {
 		return ccookies.sign(
 			__CSRF,
 			d.toString(16).padStart(16,'0'),
-			`Expires=${UTC(d)}; Secure; Path=/`
+			String.raw`Expires=${UTC(d)}; Secure; Path=/`
 		);
 	},
 	_ccsrf(csrf) {

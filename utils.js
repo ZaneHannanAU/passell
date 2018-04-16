@@ -10,9 +10,9 @@ const mkdirp = require('zmkdirp');
 
 
 // shorthand deviations: generates arrays [[0],[0,-1],[0,-1,-2],...]
-const otp_deviations = Array.from({length: 8}, ($,i) => Array.from({length: i+1}, (_,d)=>-d));
+const totp_deviations = Array.from({length: 8}, ($,i) => Array.from({length: i+1}, (_,d)=>-d));
 // algs: none, sha1, sha256, sha512
-const otp_algs = [null, 'sha1', 'sha256', 'sha512'];
+const totp_algs = [null, 'sha1', 'sha256', 'sha512'];
 
 
 // shorthand password rounds: 2^n keys. Always make more than you'll need...
@@ -35,6 +35,15 @@ const [
 	fs.fchmod, fs.chmod, fs.ftruncate
 ].map(util.promisify);
 
+const freeBlock = (()=>{
+	const free = Buffer.allocUnsafe(pw_rounds[16])
+	const bins = Array.from({length: 128},(_,i)=>free.slice(i*512,(i+1)*512))
+	return {
+		bins,
+		get(){return bins.shift() || Buffer.allocUnsafe(512)},
+		give(b){bins.push(b)}
+	}
+})()
 
 const utils = {
 	env: require('./env'),
@@ -42,6 +51,8 @@ const utils = {
 	fn: { // constant functions
 		// base32
 		buf_b32, b32_buf,
+		// 512 byte blocks
+		freeBlock,
 		// totp/otp
 		getTOTP, verifyTOTP, toURI,
 		// crypto
@@ -50,7 +61,7 @@ const utils = {
 		mkdirp, fopen, fclose,
 		// data modify
 		fread, fwrite, fappend,
-		// data understand
+		// data cut and perms
 		fchmod, chmod, ftrunc,
 	},
 	constants: { // non-function constants
@@ -63,6 +74,8 @@ const utils = {
 		// otp
 		otp_rounds: pw_rounds+5,
 		otp_alg: 'sha384',
+		// email reset
+		ereset_alg: 'sha512'
 	}
 };
 

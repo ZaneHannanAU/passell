@@ -73,8 +73,8 @@ module.exports = {
 	) / (b === 'b' ? 8 : 1),
 	
 	// password minimums
-	pw_min: Number.parseInt(PASSELLPWMIN, 10) || 9,
-	pw_rounds: Number.parseInt(PASSELLPWRND, 10) || 18,
+	pw_minlen: Number.parseInt(PASSELLPWMIN, 10) || 9,
+	pw_drounds: Number.parseInt(PASSELLPWRND, 10) || 18,
 
 	// secret to sign cookies with.
 	cookie_secret: SECRET

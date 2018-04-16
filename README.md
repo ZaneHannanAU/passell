@@ -46,6 +46,10 @@ Please use the same value for PASSELLSRT. Only villains use a varying value.
 
 ## Implementation details
 
+Standard binary files are segmented into 512 bytes per each record. By default, 16 MiB of RAM is allocated for using these.
+
+Text files are free per user. They have no fixed-width of name or user.
+
 ### txt (uname) file
 
 The username database is a newline separated array of names. It's stored in-memory and on-disk simultaneously. The user names (and screen names if enabled) are read, appended to and edited in-place. The screen name is disabled by default, but is stored in JSON delimited format (quoted) as opposed to plain text.
@@ -65,6 +69,7 @@ The username database is a newline separated array of names. It's stored in-memo
 * `str email [32,111]` email primary (name) key in UTF-8.
 * `str phone [112,127]` phone number in ASCII. Should have free bytes.
 * `str screen[128,256]` screen name in UTF-8. Goes to `sLen` as a shortcut to get length.
+* `bytes free[256,512]` free bytes for more information.
 
 
 ### pwd (upass) file
@@ -87,6 +92,9 @@ The username database is a newline separated array of names. It's stored in-memo
 * `uint8 otpr [128,128]` OTP hashsum rounds.
 * `bytes otps [129,160]` OTP hashsum salt.
 * `bytes otp [161,256]` 2 OTP hashes.
+* `int48 eri [256,262]` email reset generation time.
+* `bytes ere [262,326]` email reset bin HMAC. Reset is delivered in base32, and generated from primary state of the user.
+* `bytes free[326,512]` free bytes for later use.
 
 Used OTP hash will be zeroed on use. Only tested if `uinfo.pw_checkOTP` is called (should be on forget password page). _Must_ change main password after use. _Should_ offer a replacement one-time password. Hashes are only generated once and deleted after use. Passwords are generated from the sha1 hash of `otpr, otps, uname, Buffer.from(Date.now().toString(16).padStart(24,'0'),'hex')` and encoded as base32 for a 32 character case-insensitive one-time password. After this password is used it _must_ verify and reset (without notifying previous set user) password, email, phone and screen name (all users' info). The OTP is only given once. It must be given in one request and not stored further.
 
